@@ -15,12 +15,12 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Mint your NFTs with <a href="https://solanapay.com/">SolanaPay!</a>
+          Mint NFTs with <a href="https://solanapay.com/">SolanaPay!</a>
         </h1>
 
         <p className={styles.description}>
           Get started by scaning this QR Code with{' '}
-          <code className={styles.code}>Phantom Mobile Wallet</code>
+          <code className={styles.code}>Phantom Mobile Wallet (Devnet network)</code>
         </p>
 
       <Minter/>
@@ -29,13 +29,13 @@ const Home: NextPage = () => {
 
       <footer className={styles.footer}>
         <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+          href="https://solanapay.com/"
           target="_blank"
           rel="noopener noreferrer"
         >
           Powered by{' '}
           <span className={styles.logo}>
-            <Image src="/solpay.svg" alt="Solpay Logo" width={72} height={16} />
+            <Image src="/solpay.svg" alt="Solpay Logo" width={62} height={25} />
           </span>
         </a>
       </footer>

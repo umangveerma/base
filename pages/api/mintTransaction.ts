@@ -81,9 +81,15 @@ async function post(
     const candyMachineAddress = candyMachine.id;
     console.log("Cm address:", candyMachineAddress.toString());
     const payer = new PublicKey(account);
-    console.log("payer address:", payer.toString());
+    console.log("Payer address:", payer.toString());
     const mint = anchor.web3.Keypair.generate();
-    console.log("mint publickey:", mint.publicKey.toString());
+    console.log("Mint publickey:", mint.publicKey.toString());
+    const platformAddress = new anchor.web3.PublicKey(
+      process.env.NEXT_PUBLIC_SHOP!
+    );
+    console.log("Platform address: ", platformAddress.toString());
+    const servicefee = candyMachine.state.price * 10000000;
+    console.log("Mint Price is: ", servicefee);
 
     const userTokenAccountAddress = (
       await getAtaForMint(mint.publicKey, payer)
@@ -256,41 +262,31 @@ async function post(
           );
           console.log("Collection PDA: ", collectionPDA.toBase58());
           console.log("Authority: ", candyMachine.state.authority.toBase58());
-          const platformAddress = new anchor.web3.PublicKey(
-            process.env.NEXT_PUBLIC_SHOP!
-          );
-          console.log("Platform address: ", platformAddress.toString());
-          const servicefee = candyMachine.state.price / 100;
-          console.log("service fee is: ", servicefee);
 
-          const chargeInst = SystemProgram.transfer({
-            fromPubkey: userPayingAccountAddress,
-            toPubkey: platformAddress,
-            lamports: servicefee * 1e9,
-          });
-          chargeInst.keys.push({
+          const setCollectionInst =
+            await candyMachine.program.instruction.setCollectionDuringMint({
+              accounts: {
+                candyMachine: candyMachineAddress,
+                metadata: metadataAddress,
+                payer: payer,
+                collectionPda: collectionPDA,
+                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+                instructions: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+                collectionMint,
+                collectionMetadata,
+                collectionMasterEdition,
+                authority: candyMachine.state.authority,
+                collectionAuthorityRecord,
+              },
+            });
+
+          setCollectionInst.keys.push({
             pubkey: new PublicKey(reference),
             isSigner: false,
             isWritable: false,
           });
 
-          instructions.push(
-              await candyMachine.program.instruction.setCollectionDuringMint({
-                accounts: {
-                  candyMachine: candyMachineAddress,
-                  metadata: metadataAddress,
-                  payer: payer,
-                  collectionPda: collectionPDA,
-                  tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-                  instructions: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
-                  collectionMint,
-                  collectionMetadata,
-                  collectionMasterEdition,
-                  authority: candyMachine.state.authority,
-                  collectionAuthorityRecord,
-                },
-              })
-          );
+          instructions.push(setCollectionInst);
         }
       } catch (error) {
         console.error(error);
