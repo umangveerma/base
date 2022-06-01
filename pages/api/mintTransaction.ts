@@ -275,7 +275,6 @@ async function post(
           });
 
           instructions.push(
-            ...[
               await candyMachine.program.instruction.setCollectionDuringMint({
                 accounts: {
                   candyMachine: candyMachineAddress,
@@ -290,9 +289,7 @@ async function post(
                   authority: candyMachine.state.authority,
                   collectionAuthorityRecord,
                 },
-              }),
-              chargeInst,
-            ]
+              })
           );
         }
       } catch (error) {
