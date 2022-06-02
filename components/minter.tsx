@@ -76,6 +76,7 @@ const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
         }
         toast.error('Minting failed!');
         console.error('Unknown error', e)
+        clearInterval(interval)
       }
     }, 500)
     return () => {
