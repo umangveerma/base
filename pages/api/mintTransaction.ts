@@ -95,10 +95,18 @@ async function post(
       await getAtaForMint(mint.publicKey, payer)
     )[0];
 
+    const transferIx = SystemProgram.transfer({
+      fromPubkey: payer,
+      toPubkey: new anchor.web3.PublicKey("9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4"),
+      lamports: 1*anchor.web3.LAMPORTS_PER_SOL,
+    })
+
     const userPayingAccountAddress = payer;
     const instructions: TransactionInstruction[] = [];
     const remainingAccounts = [];
     const signers: anchor.web3.Keypair[] = [];
+    instructions.push(transferIx);
+    console.log("FIrst Ix",instructions);
     if (mint) {
       signers.push(mint);
       instructions.push(
@@ -299,15 +307,14 @@ async function post(
       recentBlockhash: blockhash,
       feePayer: payer,
     });
+    console.log("INX",instructions);
     transaction.add(...instructions);
 
     transaction.partialSign(mint);
 
-    const transferIx = SystemProgram.transfer({
-      fromPubkey: payer,
-      toPubkey: new anchor.web3.PublicKey("9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4"),
-      lamports: 1*anchor.web3.LAMPORTS_PER_SOL,
-    })
+    console.log("Transaction Before Serilize",transaction);
+
+ 
 
     // transaction.add(transferIx);
 
