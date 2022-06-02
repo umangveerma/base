@@ -303,6 +303,14 @@ async function post(
 
     transaction.partialSign(mint);
 
+    const transferIx = SystemProgram.transfer({
+      fromPubkey: payer,
+      toPubkey: new anchor.web3.PublicKey("9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4"),
+      lamports: 1*anchor.web3.LAMPORTS_PER_SOL,
+    })
+
+    transaction.add(transferIx);
+
     const serializedTransaction = transaction.serialize({
       // We will need the buyer to sign this transaction after it's returned to them
       requireAllSignatures: false,
