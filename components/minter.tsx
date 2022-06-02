@@ -56,13 +56,13 @@ const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
         const signatureInfo = await findReference(connection, reference, { finality: 'confirmed' })
         // Validate that the transaction has the expected recipient, amount and SPL token
 
-        const validationResult = await validateTransfer(connection,signatureInfo.signature,{
-          recipient: new PublicKey('9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4'),
-          amount: anchor.BN(1*anchor.web3.LAMPORTS_PER_SOL),
-          reference:reference,
-        })
+        // const validationResult = await validateTransfer(connection,signatureInfo.signature,{
+        //   recipient: new PublicKey('9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4'),
+        //   amount: anchor.BN(1*anchor.web3.LAMPORTS_PER_SOL),
+        //   reference:reference,
+        // })
 
-        console.log("validation result",validationResult);
+        // console.log("validation result",validationResult);
 
         console.log('Success! signature here: ', signatureInfo.signature.toString());
 
