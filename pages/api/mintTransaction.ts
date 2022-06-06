@@ -95,6 +95,7 @@ async function post(
       await getAtaForMint(mint.publicKey, payer)
     )[0];
 
+    // @ts-ignore
     const transferIx = SystemProgram.transfer({
       fromPubkey: payer,
       toPubkey: new anchor.web3.PublicKey("9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4"),
@@ -105,8 +106,7 @@ async function post(
     const instructions: TransactionInstruction[] = [];
     const remainingAccounts = [];
     const signers: anchor.web3.Keypair[] = [];
-    instructions.push(transferIx);
-    console.log("FIrst Ix",instructions);
+    
     if (mint) {
       signers.push(mint);
       instructions.push(
