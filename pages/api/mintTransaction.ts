@@ -1,53 +1,180 @@
-import {
-  PublicKey,
-  Connection,
-  Transaction,
-  TransactionInstruction,
-  SYSVAR_SLOT_HASHES_PUBKEY,
-  SystemProgram,
-} from "@solana/web3.js";
-import { NextApiRequest, NextApiResponse } from "next";
-import {
-  getAtaForMint,
-  createAssociatedTokenAccountInstruction,
-  getNetworkToken,
-  CIVIC,
-  getNetworkExpire,
-  getMetadata,
-  getMasterEdition,
-  TOKEN_METADATA_PROGRAM_ID,
-  getCandyMachineCreator,
-  getCollectionPDA,
-  CollectionData,
-  getCollectionAuthorityRecordPDA,
-  getCandyMachineState,
-} from "../../components/candy-machine";
-import * as anchor from "@project-serum/anchor";
-import { MintLayout, TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { createAssociatedTokenAccountInstruction, createInitializeMintInstruction, createMintToInstruction, createTransferCheckedInstruction, getAssociatedTokenAddress, getMint, MintLayout, TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import {  Connection, Keypair, PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY, SYSVAR_INSTRUCTIONS_PUBKEY, SYSVAR_SLOT_HASHES_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js"
+import { NextApiRequest, NextApiResponse } from "next"
+import { MintNftInstructionAccounts, MintNftInstructionArgs, createMintNftInstruction } from "@metaplex-foundation/mpl-candy-machine"
+import base58 from "bs58"
+// Constantsgst
+// metaplex token metadata program address
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+// associated token account program address
+const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+
+// candy machine program address
+const CANDY_MACHINE_PROGRAM_ID = new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ')
+
+// You need to update the next 2 to your candy machine
+// my candy machine address
+const MY_CANDY_MACHINE_ID = new PublicKey("F8Kxjnp3dXyBamR4DKXSGvnzdz4PckJrQxWSingWfdQg")
+
+// my wallet address used to create the candy machine
+const CANDY_MACHINE_OWNER = new PublicKey("9AUvdLggr4DezH1FEHFBVqQPNUF9q6sZGTYoPMyum2sk")
 
 export type MakeTransactionInputData = {
-  account: string;
-};
+  account: string,
+}
 
 type MakeTransactionGetResponse = {
-  label: string;
-  icon: string;
-};
+  label: string,
+  icon: string,
+}
 
 export type MakeTransactionOutputData = {
-  transaction: string;
-  message: string;
-};
+  transaction: string,
+  message: string,
+}
 
 type ErrorOutput = {
-  error: string;
-};
+  error: string
+}
 
 function get(res: NextApiResponse<MakeTransactionGetResponse>) {
   res.status(200).json({
-    label: "Candy Machine",
-    icon: "https://www.downloadclipart.net/large/candy-png-free-download.png",
-  });
+    label: "Cookies Inc",
+    icon: "https://freesvg.org/img/1370962427.png",
+  })
+}
+
+// Copied from candy-machine-ui: https://github.dev/metaplex-foundation/metaplex/blob/e20c14069be57ffa09428dd25a07a5bcf7ef51c4/js/packages/candy-machine-ui/src/candy-machine.ts#L222
+const getMetadata = async (mint: PublicKey): Promise<PublicKey> => {
+  return (
+    await PublicKey.findProgramAddress(
+      [
+        Buffer.from('metadata'),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+      ],
+      TOKEN_METADATA_PROGRAM_ID,
+    )
+  )[0];
+};
+
+// Copied from candy-machine-ui: https://github.dev/metaplex-foundation/metaplex/blob/e20c14069be57ffa09428dd25a07a5bcf7ef51c4/js/packages/candy-machine-ui/src/candy-machine.ts#L206
+const getMasterEdition = async (
+  mint: PublicKey,
+): Promise<PublicKey> => {
+  return (
+    await PublicKey.findProgramAddress(
+      [
+        Buffer.from('metadata'),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+        Buffer.from('edition'),
+      ],
+      TOKEN_METADATA_PROGRAM_ID,
+    )
+  )[0];
+};
+
+// Copied from candy-machine-ui: https://github.dev/metaplex-foundation/metaplex/blob/631983372cfbdfa99a45c26141f8756cd77efc99/js/packages/candy-machine-ui/src/utils.ts#L55-L63
+const getAtaForMint = async (payer: PublicKey, mint: PublicKey,): Promise<[PublicKey, number]> => {
+  return await PublicKey.findProgramAddress(
+    [payer.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+  );
+};
+
+// Copied from candy-machine-ui: https://github.dev/metaplex-foundation/metaplex/blob/e20c14069be57ffa09428dd25a07a5bcf7ef51c4/js/packages/candy-machine-ui/src/candy-machine.ts#L237-L238
+const getCandyMachineCreator = async (candyMachine: PublicKey): Promise<[PublicKey, number]> => {
+  return await PublicKey.findProgramAddress(
+    [Buffer.from('candy_machine'), candyMachine.toBuffer()],
+    CANDY_MACHINE_PROGRAM_ID,
+  );
+};
+
+const createSetupInstructions = async (
+  connection: Connection,
+  payer: PublicKey,
+  mintFor: PublicKey,
+  mint: PublicKey
+): Promise<TransactionInstruction[]> => {
+  const minimumBalance = await connection.getMinimumBalanceForRentExemption(MintLayout.span)
+  const userTokenAccountAddress = (await getAtaForMint(mintFor, mint))[0];
+
+  return [
+    SystemProgram.createAccount({
+      fromPubkey: payer,
+      newAccountPubkey: mint,
+      space: MintLayout.span,
+      lamports: minimumBalance,
+      programId: TOKEN_PROGRAM_ID,
+    }),
+    createInitializeMintInstruction(
+      mint,
+      0, // decimals
+      mintFor, // mint authority
+      mintFor, // freeze authority
+    ),
+    createAssociatedTokenAccountInstruction(
+      payer, // payer
+      userTokenAccountAddress, // user token address
+      mintFor, // owner
+      mint, // mint
+    ),
+    createMintToInstruction(
+      mint, // mint
+      userTokenAccountAddress, // destination
+      mintFor, // authority
+      1, // amount
+    ),
+  ]
+}
+
+const createMetaplexMintInstruction = async (
+  payer: PublicKey,
+  mintFor: PublicKey,
+  mint: PublicKey
+): Promise<TransactionInstruction> => {
+  const metadata = await getMetadata(mint)
+  const masterEdition = await getMasterEdition(mint)
+
+  const [candyMachineCreator, creatorBump] = await getCandyMachineCreator(
+    MY_CANDY_MACHINE_ID,
+  );
+
+  const accounts: MintNftInstructionAccounts = {
+    // from metaplex CLI
+    candyMachine: MY_CANDY_MACHINE_ID,
+    // from getCandyMachineCreator
+    candyMachineCreator: candyMachineCreator,
+    // who is paying for the NFT to be minted
+    payer: payer,
+    // treasury, I just set this to myself (this is set in metaplex CLI)
+    wallet: CANDY_MACHINE_OWNER,
+    // metadata public key, from getMetadata call
+    metadata,
+    // mint public key, generated
+    mint: mint,
+    // mint + update authorities are who we're minting for
+    mintAuthority: mintFor,
+    updateAuthority: mintFor,
+    // master edition public key, from getMasterEdition call
+    masterEdition,
+    // token metadata program is hardcoded
+    tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+    // clock, from web3.js
+    clock: SYSVAR_CLOCK_PUBKEY,
+    // copied from candy-machine-ui, which uses this
+    recentBlockhashes: SYSVAR_SLOT_HASHES_PUBKEY,
+    // also just copied candy-machine-ui
+    instructionSysvarAccount: SYSVAR_INSTRUCTIONS_PUBKEY,
+  }
+
+  const args: MintNftInstructionArgs = {
+    creatorBump
+  }
+
+  return createMintNftInstruction(accounts, args)
 }
 
 async function post(
@@ -55,299 +182,107 @@ async function post(
   res: NextApiResponse<MakeTransactionOutputData | ErrorOutput>
 ) {
   try {
+    // We pass the selected items in the query, calculate the expected cost
+
     // We pass the reference to use in the query
-    const { reference } = req.query;
+    const { reference } = req.query
     if (!reference) {
-      res.status(400).json({ error: "No reference provided" });
-      return;
+      res.status(400).json({ error: "No reference provided" })
+      return
     }
-    console.log(reference);
+
     // We pass the buyer's public key in JSON body
-    const { account } = req.body as MakeTransactionInputData;
+    const { account } = req.body as MakeTransactionInputData
     if (!account) {
-      res.status(40).json({ error: "No account provided" });
-      return;
-    }
-    console.log(account as string);
-
-    const dummy_key_pair = new anchor.web3.Keypair();
-    const walletWrapper = new anchor.Wallet(dummy_key_pair);
-    const candyMachine = await getCandyMachineState(
-      walletWrapper,
-      new anchor.web3.PublicKey(process.env.NEXT_PUBLIC_CANDY_MACHINE_ID!),
-      new anchor.web3.Connection(process.env.NEXT_PUBLIC_RPC!)
-    );
-
-    const candyMachineAddress = candyMachine.id;
-    console.log("Cm address:", candyMachineAddress.toString());
-    const payer = new PublicKey(account);
-    console.log("Payer address:", payer.toString());
-    const mint = anchor.web3.Keypair.generate();
-    console.log("Mint publickey:", mint.publicKey.toString());
-    const platformAddress = new anchor.web3.PublicKey(
-      process.env.NEXT_PUBLIC_SHOP!
-    );
-    console.log("Platform address: ", platformAddress.toString());
-    const servicefee = candyMachine.state.price * 10000000;
-    console.log("Mint Price is: ", servicefee);
-
-    const userTokenAccountAddress = (
-      await getAtaForMint(mint.publicKey, payer)
-    )[0];
-
-    // @ts-ignore
-    const transferIx = SystemProgram.transfer({
-      fromPubkey: payer,
-      toPubkey: new anchor.web3.PublicKey("9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4"),
-      lamports: 1*anchor.web3.LAMPORTS_PER_SOL,
-    })
-
-    const userPayingAccountAddress = payer;
-    const instructions: TransactionInstruction[] = [];
-    const remainingAccounts = [];
-    const signers: anchor.web3.Keypair[] = [];
-    
-    if (mint) {
-      signers.push(mint);
-      instructions.push(
-        ...[
-          anchor.web3.SystemProgram.createAccount({
-            fromPubkey: payer,
-            newAccountPubkey: mint.publicKey,
-            space: MintLayout.span,
-            lamports:
-              await candyMachine.program.provider.connection.getMinimumBalanceForRentExemption(
-                MintLayout.span
-              ),
-            programId: TOKEN_PROGRAM_ID,
-          }),
-          Token.createInitMintInstruction(
-            TOKEN_PROGRAM_ID,
-            mint.publicKey,
-            0,
-            payer,
-            payer
-          ),
-          createAssociatedTokenAccountInstruction(
-            userTokenAccountAddress,
-            payer,
-            payer,
-            mint.publicKey
-          ),
-          Token.createMintToInstruction(
-            TOKEN_PROGRAM_ID,
-            mint.publicKey,
-            userTokenAccountAddress,
-            payer,
-            [],
-            1
-          ),
-        ]
-      );
-    }
-    if (candyMachine.state.gatekeeper) {
-      remainingAccounts.push({
-        pubkey: (
-          await getNetworkToken(
-            payer,
-            candyMachine.state.gatekeeper.gatekeeperNetwork
-          )
-        )[0],
-        isWritable: true,
-        isSigner: false,
-      });
-
-      if (candyMachine.state.gatekeeper.expireOnUse) {
-        remainingAccounts.push({
-          pubkey: CIVIC,
-          isWritable: false,
-          isSigner: false,
-        });
-        remainingAccounts.push({
-          pubkey: (
-            await getNetworkExpire(
-              candyMachine.state.gatekeeper.gatekeeperNetwork
-            )
-          )[0],
-          isWritable: false,
-          isSigner: false,
-        });
-      }
-    }
-    if (candyMachine.state.whitelistMintSettings) {
-      const mint = new anchor.web3.PublicKey(
-        candyMachine.state.whitelistMintSettings.mint
-      );
-
-      const whitelistToken = (await getAtaForMint(mint, payer))[0];
-      remainingAccounts.push({
-        pubkey: whitelistToken,
-        isWritable: true,
-        isSigner: false,
-      });
-
-      if (candyMachine.state.whitelistMintSettings.mode.burnEveryTime) {
-        remainingAccounts.push({
-          pubkey: mint,
-          isWritable: true,
-          isSigner: false,
-        });
-        remainingAccounts.push({
-          pubkey: payer,
-          isWritable: false,
-          isSigner: true,
-        });
-      }
+      res.status(40).json({ error: "No account provided" })
+      return
     }
 
-    if (candyMachine.state.tokenMint) {
-      remainingAccounts.push({
-        pubkey: userPayingAccountAddress,
-        isWritable: true,
-        isSigner: false,
-      });
-      remainingAccounts.push({
-        pubkey: payer,
-        isWritable: false,
-        isSigner: true,
-      });
+    // We get the shop private key from .env - this is the same as in our script
+    const shopPrivateKey = '3Z21vQXzp8Yz1xSSeT9Mfhoo92qaF6HS6ajDrLhDQkjYCHwfFQTBLxQomg4PHEq2s2niqs3cpbXgWmQRVscdXgMr'
+    if (!shopPrivateKey) {
+      res.status(500).json({ error: "Shop private key not available" })
     }
-    const metadataAddress = await getMetadata(mint.publicKey);
-    const masterEdition = await getMasterEdition(mint.publicKey);
+    const shopKeypair = Keypair.fromSecretKey(base58.decode(shopPrivateKey))
 
-    const [candyMachineCreator, creatorBump] = await getCandyMachineCreator(
-      candyMachineAddress
-    );
 
-    console.log(remainingAccounts.map((rm) => rm.pubkey.toBase58()));
-    instructions.push(
-      await candyMachine.program.instruction.mintNft(creatorBump, {
-        accounts: {
-          candyMachine: candyMachineAddress,
-          candyMachineCreator,
-          payer: payer,
-          wallet: candyMachine.state.treasury,
-          mint: mint.publicKey,
-          metadata: metadataAddress,
-          masterEdition,
-          mintAuthority: payer,
-          updateAuthority: payer,
-          tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-          recentBlockhashes: SYSVAR_SLOT_HASHES_PUBKEY,
-          instructionSysvarAccount: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
-        },
-        remainingAccounts:
-          remainingAccounts.length > 0 ? remainingAccounts : undefined,
-      })
-    );
-    const [collectionPDA] = await getCollectionPDA(candyMachineAddress);
-    const collectionPDAAccount =
-      await candyMachine.program.provider.connection.getAccountInfo(
-        collectionPDA
-      );
+    const buyerPublicKey = new PublicKey(account)
+    const shopPublicKey = shopKeypair.publicKey
 
-    if (collectionPDAAccount && candyMachine.state.retainAuthority) {
-      try {
-        const collectionData =
-          (await candyMachine.program.account.collectionPda.fetch(
-            collectionPDA
-          )) as CollectionData;
-        console.log(collectionData);
-        const collectionMint = collectionData.mint;
-        const collectionAuthorityRecord = await getCollectionAuthorityRecordPDA(
-          collectionMint,
-          collectionPDA
-        );
-        console.log(collectionMint);
-        if (collectionMint) {
-          const collectionMetadata = await getMetadata(collectionMint);
-          const collectionMasterEdition = await getMasterEdition(
-            collectionMint
-          );
-          console.log("Collection PDA: ", collectionPDA.toBase58());
-          console.log("Authority: ", candyMachine.state.authority.toBase58());
+    const connection = new Connection('https://devnet.genesysgo.net/')
 
-          const setCollectionInst =
-            await candyMachine.program.instruction.setCollectionDuringMint({
-              accounts: {
-                candyMachine: candyMachineAddress,
-                metadata: metadataAddress,
-                payer: payer,
-                collectionPda: collectionPDA,
-                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-                instructions: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
-                collectionMint,
-                collectionMetadata,
-                collectionMasterEdition,
-                authority: candyMachine.state.authority,
-                collectionAuthorityRecord,
-              },
-            });
 
-          setCollectionInst.keys.push({
-            pubkey: new PublicKey(reference),
-            isSigner: false,
-            isWritable: false,
-          });
+    // Get details about the USDC token
+    // Get the buyer's USDC token account address
 
-          instructions.push(setCollectionInst);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    // Get a recent blockhash to include in the transaction
+    const { blockhash } = await (connection.getLatestBlockhash('finalized'))
 
-    const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
-    const { blockhash } = await connection.getLatestBlockhash("finalized");
     const transaction = new Transaction({
       recentBlockhash: blockhash,
-      feePayer: payer,
-    });
-    console.log("INX",instructions);
-    transaction.add(...instructions);
+      // The buyer pays the transaction fee
+      feePayer: shopPublicKey,
+    })
 
-    transaction.partialSign(mint);
+    // Create the instruction to send USDC from the buyer to the sho
 
-    console.log("Transaction Before Serilize",transaction);
+    // Add the reference to the instruction as a key
+    // This will mean this transaction is returned when we query for the reference
+   /* .keys.push({
+      pubkey: new PublicKey(reference),
+      isSigner: false,
+      isWritable: false,
+    })*/
 
- 
+    const mint = Keypair.generate()
 
-    // transaction.add(transferIx);
+    // Create the mint setup instructions
+    const mintSetupInstructions = await createSetupInstructions(connection, shopPublicKey, buyerPublicKey, mint.publicKey)
 
+    // Create the mint NFT instruction
+    const mintNFTInstruction = await createMetaplexMintInstruction(shopPublicKey, buyerPublicKey, mint.publicKey)
+
+    // Add all instructions to the transaction
+    transaction.add(...mintSetupInstructions, mintNFTInstruction)
+
+    // Sign the transaction as the mint, which is required for setup instructions
+    // Also sign as the shop, which is paying the NFT costs
+    // We must partial sign because the transfer instruction still requires the user
+    transaction.partialSign(mint, shopKeypair)
+
+    // Serialize the transaction and convert to base64 to return it
     const serializedTransaction = transaction.serialize({
       // We will need the buyer to sign this transaction after it's returned to them
-      requireAllSignatures: false,
-    });
-    const base64 = serializedTransaction.toString("base64");
-    console.log("Searilized Transaction: ", base64);
-    const message = "Thanks for minting NFTs!";
+      requireAllSignatures: false
+    })
+    const base64 = serializedTransaction.toString('base64')
 
+    // Insert into database: reference, amount
+
+    const message = "Free dinosaur with all cookies! 🍪"
+
+    // Return the serialized transaction
     res.status(200).json({
       transaction: base64,
       message,
-    });
+    })
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "error creating transaction" });
-    return;
+
+    res.status(500).json({ error: 'error creating transaction', })
+    return
   }
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<
-    MakeTransactionGetResponse | MakeTransactionOutputData | ErrorOutput
-  >
+  res: NextApiResponse<MakeTransactionGetResponse | MakeTransactionOutputData | ErrorOutput>
 ) {
   if (req.method === "GET") {
-    return get(res);
+    return get(res)
   } else if (req.method === "POST") {
-    return await post(req, res);
+    return await post(req, res)
   } else {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" })
   }
 }
