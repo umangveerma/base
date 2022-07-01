@@ -42,8 +42,8 @@ type ErrorOutput = {
 
 function get(res: NextApiResponse<MakeTransactionGetResponse>) {
   res.status(200).json({
-    label: "Cookies Inc",
-    icon: "https://freesvg.org/img/1370962427.png",
+    label: "CandyPay",
+    icon: "https://www.downloadclipart.net/large/candy-png-free-download.png"",
   })
 }
 
@@ -272,7 +272,7 @@ async function post(
 
     // Insert into database: reference, amount
 
-    const message = "Free dinosaur with all cookies! 🍪"
+    const message = "Mint free NFTs, no gas fees ever 🍬"
 
     // Return the serialized transaction
     res.status(200).json({
