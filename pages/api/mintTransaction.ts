@@ -3,6 +3,10 @@ import {  Connection, Keypair, PublicKey, SystemProgram, SYSVAR_CLOCK_PUBKEY, SY
 import { NextApiRequest, NextApiResponse } from "next"
 import { MintNftInstructionAccounts, MintNftInstructionArgs, createMintNftInstruction } from "@metaplex-foundation/mpl-candy-machine"
 import base58 from "bs58"
+import * as anchor from "@project-serum/anchor";
+import {
+  getCandyMachineState,
+} from "../../components/candy-machine";
 // Constantsgst
 // metaplex token metadata program address
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
@@ -15,10 +19,8 @@ const CANDY_MACHINE_PROGRAM_ID = new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33t
 
 // You need to update the next 2 to your candy machine
 // my candy machine address
-const MY_CANDY_MACHINE_ID = new PublicKey("F8Kxjnp3dXyBamR4DKXSGvnzdz4PckJrQxWSingWfdQg")
+const MY_CANDY_MACHINE_ID = new PublicKey("GrVSy3ZRbuw5ACbwSEMsj9gULk9MW7QPK1TUYcP6nLM")
 
-// my wallet address used to create the candy machine
-const CANDY_MACHINE_OWNER = new PublicKey("9AUvdLggr4DezH1FEHFBVqQPNUF9q6sZGTYoPMyum2sk")
 
 export type MakeTransactionInputData = {
   account: string,
@@ -133,7 +135,8 @@ const createSetupInstructions = async (
 const createMetaplexMintInstruction = async (
   payer: PublicKey,
   mintFor: PublicKey,
-  mint: PublicKey
+  mint: PublicKey,
+  ownerAdd: PublicKey
 ): Promise<TransactionInstruction> => {
   const metadata = await getMetadata(mint)
   const masterEdition = await getMasterEdition(mint)
@@ -150,7 +153,7 @@ const createMetaplexMintInstruction = async (
     // who is paying for the NFT to be minted
     payer: payer,
     // treasury, I just set this to myself (this is set in metaplex CLI)
-    wallet: CANDY_MACHINE_OWNER,
+    wallet: ownerAdd,
     // metadata public key, from getMetadata call
     metadata,
     // mint public key, generated
@@ -198,6 +201,16 @@ async function post(
       return
     }
 
+     const dummy_key_pair = new anchor.web3.Keypair();
+    const walletWrapper = new anchor.Wallet(dummy_key_pair);
+    const candyMachine = await getCandyMachineState(
+      walletWrapper,
+      new anchor.web3.PublicKey('GrVSy3ZRbuw5ACbwSEMsj9gULk9MW7QPK1TUYcP6nLM'),
+      new anchor.web3.Connection('https://devnet.genesysgo.net/')
+    );
+
+    const candyMachineAddress = candyMachine.id;
+    const ownerAdd= candyMachine.state.treasury
     // We get the shop private key from .env - this is the same as in our script
     const shopPrivateKey = '3Z21vQXzp8Yz1xSSeT9Mfhoo92qaF6HS6ajDrLhDQkjYCHwfFQTBLxQomg4PHEq2s2niqs3cpbXgWmQRVscdXgMr'
     if (!shopPrivateKey) {
@@ -240,7 +253,7 @@ async function post(
     const mintSetupInstructions = await createSetupInstructions(connection, shopPublicKey, buyerPublicKey, mint.publicKey)
 
     // Create the mint NFT instruction
-    const mintNFTInstruction = await createMetaplexMintInstruction(shopPublicKey, buyerPublicKey, mint.publicKey)
+    const mintNFTInstruction = await createMetaplexMintInstruction(shopPublicKey, buyerPublicKey, mint.publicKey, ownerAdd)
 
     // Add all instructions to the transaction
     transaction.add(...mintSetupInstructions, mintNFTInstruction)
