@@ -19,7 +19,7 @@ const CANDY_MACHINE_PROGRAM_ID = new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33t
 
 // You need to update the next 2 to your candy machine
 // my candy machine address
-const MY_CANDY_MACHINE_ID = new PublicKey("GrVSy3ZRbuw5ACbwSEMsj9gULk9MW7QPK1TUYcP6nLM")
+const MY_CANDY_MACHINE_ID = new PublicKey(process.env.CANDY_MACHINE_ID as string)
 
 
 export type MakeTransactionInputData = {
@@ -212,7 +212,7 @@ async function post(
     const candyMachineAddress = candyMachine.id;
     const ownerAdd= candyMachine.state.treasury
     // We get the shop private key from .env - this is the same as in our script
-    const shopPrivateKey = '3Z21vQXzp8Yz1xSSeT9Mfhoo92qaF6HS6ajDrLhDQkjYCHwfFQTBLxQomg4PHEq2s2niqs3cpbXgWmQRVscdXgMr'
+    const shopPrivateKey = process.env.SHOP_PRIVATE_KEY as string
     if (!shopPrivateKey) {
       res.status(500).json({ error: "Shop private key not available" })
     }
