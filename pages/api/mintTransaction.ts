@@ -43,7 +43,7 @@ type ErrorOutput = {
 function get(res: NextApiResponse<MakeTransactionGetResponse>) {
   res.status(200).json({
     label: "CandyPay",
-    icon: "https://www.downloadclipart.net/large/candy-png-free-download.png"",
+    icon: "https://www.downloadclipart.net/large/candy-png-free-download.png",
   })
 }
 
