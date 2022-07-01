@@ -19,10 +19,10 @@ const Home: NextPage = () => {
         </h1>
 
         <p className={styles.description}>
-          Get started by scaning this QR Code with{' '}
+         Now Mint Solana NFTs completely FREE, No gas fees hassle! Get started by scaning this QR Code with{' '}
           <code className={styles.code}>Phantom Mobile Wallet (Devnet network)</code>
         </p>
-
+        
       <Minter/>
       
       </main>

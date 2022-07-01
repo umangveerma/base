@@ -205,10 +205,9 @@ async function post(
     const walletWrapper = new anchor.Wallet(dummy_key_pair);
     const candyMachine = await getCandyMachineState(
       walletWrapper,
-      new anchor.web3.PublicKey('GrVSy3ZRbuw5ACbwSEMsj9gULk9MW7QPK1TUYcP6nLM'),
+      new anchor.web3.PublicKey(process.env.CANDY_MACHINE_ID as string),
       new anchor.web3.Connection('https://devnet.genesysgo.net/')
     );
-
     const candyMachineAddress = candyMachine.id;
     const ownerAdd= candyMachine.state.treasury
     // We get the shop private key from .env - this is the same as in our script
