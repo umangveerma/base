@@ -28,13 +28,13 @@ export default function Minter() {
   };
 
   // Get a connection to Solana devnet
-const connection = new Connection('https://devnet.genesysgo.net/');
+const connection = new Connection(NEXT_PUBLIC_RPC!);
   // Show the QR code
   useEffect(() => {
     // window.location is only available in the browser, so create the URL in here
     console.log(searchParams.toString())
     const { location } = window
-    const apiUrl = `${location.protocol}//${location.host}/api/mintTransaction?${searchParams.toString()}`
+    const apiUrl = `${location.protocol}//${location.host}/api/gasless?${searchParams.toString()}`
     console.log(apiUrl)
     const urlParams: TransactionRequestURLFields = {
       link: new URL(apiUrl),
