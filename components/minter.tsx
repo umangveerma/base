@@ -28,7 +28,7 @@ export default function Minter() {
   };
 
   // Get a connection to Solana devnet
-const connection = new Connection(NEXT_PUBLIC_RPC!);
+const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
   // Show the QR code
   useEffect(() => {
     // window.location is only available in the browser, so create the URL in here
