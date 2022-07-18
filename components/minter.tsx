@@ -13,9 +13,9 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { Button, ButtonGroup } from "@chakra-ui/react";
+import styles from '../styles/Home.module.css'
 
 export default function Minter() {
-  const [solUrl, setSolUrl] = useState<Link>()
 
   const router = useRouter();
   // ref to a div where we'll show the QR code
@@ -39,23 +39,24 @@ export default function Minter() {
 
   // Get a connection to Solana devnet
   const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
+  const solanaUrl = 'solana:https%3A%2F%2Fpublic-api.candypay.fun%2Fapi%2Fv1%2Fgasless%2Fmint%3Fid%3Dh9jzSN-tDFhwLvqx9qyIQ?label=CandyPay&message=Gasless+%26+Mobile+Native+%3B%29';
   // Show the QR code
   useEffect(() => {
     // window.location is only available in the browser, so create the URL in here
     console.log(searchParams.toString());
     const { location } = window;
-    const apiUrl = `${location.protocol}//${
-      location.host
-    }/api/gasless?${searchParams.toString()}`;
-    console.log(apiUrl);
-    const urlParams: TransactionRequestURLFields = {
+   // const apiUrl = `${location.protocol}//${
+    //  location.host
+    //}/api/gasless?${searchParams.toString()}`;
+   // console.log(apiUrl);
+   /* const urlParams: TransactionRequestURLFields = {
       link: new URL(apiUrl),
       label: "Candy Machine",
       message:
         "https://www.downloadclipart.net/large/candy-png-free-download.png",
-    };
-    setSolUrl(encodeURL(urlParams));
-    const qr = createQR(solUrl!, 512, "transparent");
+    };*/
+   // setSolUrl(encodeURL(urlParams));
+    const qr = createQR(solanaUrl, 348, "transparent");
     if (qrRef.current) {
       qrRef.current.innerHTML = "";
       qr.append(qrRef.current);
@@ -84,7 +85,7 @@ export default function Minter() {
           signatureInfo.signature.toString()
         );
 
-        toast.success("NFT mint successfully!");
+       // toast.success("NFT mint successfully!");
 
         router.push("/confirmed");
       } catch (e) {
@@ -92,7 +93,7 @@ export default function Minter() {
           // No transaction found yet, ignore this error
           return;
         }
-        toast.error("Minting failed!");
+      //  toast.error("Minting failed!");
         console.error("Unknown error", e);
         clearInterval(interval);
       }
@@ -105,9 +106,7 @@ export default function Minter() {
   return (
     <>
       <Toaster />
-      <Button colorScheme="messenger" onClick={()=>router.push(solUrl!)} size="lg">
-          Mint NFT
-      </Button>
+      <Button onClick={()=>router.push(solanaUrl)} colorScheme="messenger" size="lg">Mint NFT</Button>
       <div ref={qrRef} />
     </>
   );

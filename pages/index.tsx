@@ -15,16 +15,20 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Mint NFTs with <a href="https://solanapay.com/">SolanaPay!</a>
+          Mobile Native Web3, only on <a href="https://solana.com/" target="_blank">Solana!</a>
         </h1>
 
         <p className={styles.description}>
-         Now Mint Solana NFTs completely FREE, No gas fees hassle! Get started by scaning this QR Code with{' '}
-          <code className={styles.code}>Phantom Mobile Wallet (Devnet network)</code>
+        What if we could Mint Solana NFTs completely Free, GASLESS & Mobile Native way? without even need
+        for a chunky Desktop or hassle for a second screen! Get started by scaning this QR Code with mobile wallets or just click on the below button!{' '}
+          <code className={styles.code}>(on Devnet)</code><br/>
+
         </p>
         
       <Minter/>
       
+      <p className={styles.des} >  Follow us on {' '}
+         <a href="https://twitter.com/candypay/" target="_blank">Twitter!</a> <code className={styles.code}>#SolanaSummerCamp</code> we are coming!</p>
       </main>
 
       <footer className={styles.footer}>
