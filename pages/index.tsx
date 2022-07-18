@@ -28,7 +28,7 @@ const Home: NextPage = () => {
       <Minter/>
       
       <p className={styles.des} >  Follow us on {' '}
-         <a href="https://twitter.com/candypay/" rel="noopener noreferrer" target="_blank">Twitter!</a> <code className={styles.code}>#SolanaSummerCamp</code> we are coming!</p>
+         <a href="https://twitter.com/candypayfun/" rel="noopener noreferrer" target="_blank">Twitter!</a> <code className={styles.code}>#SolanaSummerCamp</code> we are coming!</p>
       </main>
 
       <footer className={styles.footer}>
