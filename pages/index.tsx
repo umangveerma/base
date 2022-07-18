@@ -15,7 +15,7 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Mobile Native Web3, only on <a href="https://solana.com/" target="_blank">Solana!</a>
+          Mobile Native Web3, only on <a href="https://solana.com/" rel="noopener noreferrer" target="_blank">Solana!</a>
         </h1>
 
         <p className={styles.description}>
@@ -28,7 +28,7 @@ const Home: NextPage = () => {
       <Minter/>
       
       <p className={styles.des} >  Follow us on {' '}
-         <a href="https://twitter.com/candypay/" target="_blank">Twitter!</a> <code className={styles.code}>#SolanaSummerCamp</code> we are coming!</p>
+         <a href="https://twitter.com/candypay/" rel="noopener noreferrer" target="_blank">Twitter!</a> <code className={styles.code}>#SolanaSummerCamp</code> we are coming!</p>
       </main>
 
       <footer className={styles.footer}>
