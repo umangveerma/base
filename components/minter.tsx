@@ -38,24 +38,24 @@ export default function Minter() {
   }
 
   // Get a connection to Solana devnet
-  const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
-  const solanaUrl = 'solana:https%3A%2F%2Fpublic-api.candypay.fun%2Fapi%2Fv1%2Fgasless%2Fmint%3Fid%3Dh9jzSN-tDFhwLvqx9qyIQ?label=CandyPay&message=Gasless+%26+Mobile+Native+%3B%29';
+  const connection = new Connection("https://api.devnet.solana.com");
+  const solanaUr = 'solana:https%3A%2F%2Fpublic-api.candypay.fun%2Fapi%2Fv1%2Fgasless%2Fmint%3Fid%3Dh9jzSN-tDFhwLvqx9qyIQ?label=CandyPay&message=Gasless+%26+Mobile+Native+%3B%29';
   // Show the QR code
   useEffect(() => {
     // window.location is only available in the browser, so create the URL in here
     console.log(searchParams.toString());
     const { location } = window;
-   // const apiUrl = `${location.protocol}//${
-    //  location.host
-    //}/api/gasless?${searchParams.toString()}`;
-   // console.log(apiUrl);
-   /* const urlParams: TransactionRequestURLFields = {
+    const apiUrl = `${location.protocol}//${
+      location.host
+    }/api/gasless?${searchParams.toString()}`;
+   console.log(apiUrl);
+    const urlParams: TransactionRequestURLFields = {
       link: new URL(apiUrl),
       label: "Candy Machine",
       message:
         "https://www.downloadclipart.net/large/candy-png-free-download.png",
-    };*/
-   // setSolUrl(encodeURL(urlParams));
+    };
+    const solanaUrl = encodeURL(urlParams);
     const qr = createQR(solanaUrl, 348, "transparent");
     if (qrRef.current) {
       qrRef.current.innerHTML = "";
@@ -106,7 +106,7 @@ export default function Minter() {
   return (
     <>
       <Toaster />
-      <Button onClick={()=>router.push(solanaUrl)} colorScheme="messenger" size="lg">Mint NFT</Button>
+      <Button onClick={()=>router.push(solanaUr)} colorScheme="messenger" size="lg">Mint NFT</Button>
       <div ref={qrRef} />
     </>
   );

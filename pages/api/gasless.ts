@@ -76,8 +76,8 @@ async function post(
     const walletWrapper = new anchor.Wallet(dummy_key_pair);
     const candyMachine = await getCandyMachineState(
       walletWrapper,
-      new anchor.web3.PublicKey(process.env.CANDY_MACHINE_ID!),
-      new anchor.web3.Connection(process.env.NEXT_PUBLIC_RPC!)
+      new anchor.web3.PublicKey('2jrEdzWQp8GRXQ1gK78KAw89rg9D5j5L6ogp4SqwhSHz'),
+      new anchor.web3.Connection('https://api.devnet.solana.com')
     );
 
     const candyMachineAddress = candyMachine.id;
@@ -86,11 +86,13 @@ async function post(
     console.log("User address:", user.toString());
     const mint = anchor.web3.Keypair.generate();
     console.log("Mint publickey:", mint.publicKey.toString());
-    const servicefee = candyMachine.state.price * 10000000;
-    console.log("Mint Price is: ", servicefee);
-    const 
-shopPrivateKey=process.env.PRIVATE_KEYS!
-    const shopKeypair = Keypair.fromSecretKey(base58.decode(shopPrivateKey))
+    const servicefee = await candyMachine.state.price;
+    console.log("candy Machine Price is: ", servicefee.toNumber());
+    const supply = candyMachine.state.itemsRemaining;
+    console.log("candy Machine items remaining are: ", supply);
+    
+    const shopKeypair = Keypair.fromSecretKey(base58.decode('3fZVZs2PetD3r3H3vBQvqmvuedjwfD4ZDkHBYtxjYtxd7JZPi1pnBZUmowst4MbRw61RPgm2nQ9tifWtLN8JUKTx'));
+
     const payer = shopKeypair.publicKey
     console.log("Payer address: ", payer.toString());
     
@@ -242,7 +244,7 @@ shopPrivateKey=process.env.PRIVATE_KEYS!
       })
     );   
 
-    const connection = new Connection(process.env.NEXT_PUBLIC_RPC!);
+    const connection = new Connection('https://api.devnet.solana.com');
     const { blockhash } = await connection.getLatestBlockhash("finalized");
     const transaction = new Transaction({
       recentBlockhash: blockhash,
