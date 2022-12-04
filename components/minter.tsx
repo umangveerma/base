@@ -71,12 +71,6 @@ console.log(reference.toString())
         });
         // Validate that the transaction has the expected recipient, amount and SPL token
 
-         await validateTransfer(connection,signatureInfo.signature,{
-          recipient: new PublicKey('4Bxkgsf8xC5pxS8jYKmpjcFt7vaCYcaKsnXEWgPMbNMG'),
-          amount: new BigNumber(1_000_000),
-          reference:reference,
-        },{ commitment: 'confirmed' })
-
         console.log(
           "Success! signature here: ",
           signatureInfo.signature.toString()
@@ -88,11 +82,6 @@ console.log(reference.toString())
       } catch (e) {
         if (e instanceof FindReferenceError) {
           // No transaction found yet, ignore this error
-          return;
-        }
-        if (e instanceof ValidateTransferError) {
-          // Transaction is invalid
-          console.error('Transaction is invalid', e)
           return;
         }
        toast.error("Minting failed!");
