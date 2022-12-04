@@ -8,6 +8,7 @@ import {
   ValidateTransferError,
   Link,
 } from "@solana/pay";
+import BigNumber from "bignumber.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,6 +18,7 @@ import styles from '../styles/Home.module.css'
 
 export default function Minter() {
 
+  const [solanaUrl, setSolanaUrl] = useState<URL>();
   const router = useRouter();
   // ref to a div where we'll show the QR code
   const qrRef = useRef<HTMLDivElement>(null);
@@ -36,32 +38,29 @@ export default function Minter() {
       }
     }
   }
-
+console.log(reference.toString())
   // Get a connection to Solana devnet
   const connection = new Connection("https://api.devnet.solana.com");
-  const solanaUr = 'solana:https%3A%2F%2Fpublic-api.candypay.fun%2Fapi%2Fv1%2Fgasless%2Fmint%3Fid%3Dh9jzSN-tDFhwLvqx9qyIQ?label=CandyPay&message=Gasless+%26+Mobile+Native+%3B%29';
-  // Show the QR code
+
   useEffect(() => {
     // window.location is only available in the browser, so create the URL in here
-    console.log(searchParams.toString());
-    const { location } = window;
-    const apiUrl = `${location.protocol}//${
-      location.host
-    }/api/gasless?${searchParams.toString()}`;
-   console.log(apiUrl);
+    const { location } = window
+    const apiUrl = `${location.protocol}//${location.host}/api/payment?${searchParams.toString()}`
     const urlParams: TransactionRequestURLFields = {
       link: new URL(apiUrl),
-      label: "Candy Machine",
-      message:
-        "https://www.downloadclipart.net/large/candy-png-free-download.png",
-    };
-    const solanaUrl = encodeURL(urlParams);
-    const qr = createQR(solanaUrl, 348, "transparent");
-    if (qrRef.current) {
-      qrRef.current.innerHTML = "";
-      qr.append(qrRef.current);
     }
-  });
+    console.log(urlParams.link.href)
+    const solanaUrl = encodeURL(urlParams)
+   // setSolanaUrl(solanaUrl)
+
+   console.log(solanaUrl.href)
+    const qr = createQR(solanaUrl, 312, 'transparent')
+    if (qrRef.current) {
+      qrRef.current.innerHTML = ''
+      qr.append(qrRef.current)
+    }
+  })
+
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -72,20 +71,18 @@ export default function Minter() {
         });
         // Validate that the transaction has the expected recipient, amount and SPL token
 
-        // const validationResult = await validateTransfer(connection,signatureInfo.signature,{
-        //   recipient: new PublicKey('9kpML3MhVLPmASMDBYuaMzmFiCtdm3aityWu1pJZ1wR4'),
-        //   amount: anchor.BN(1*anchor.web3.LAMPORTS_PER_SOL),
-        //   reference:reference,
-        // })
-
-        // console.log("validation result",validationResult);
+         await validateTransfer(connection,signatureInfo.signature,{
+          recipient: new PublicKey('4Bxkgsf8xC5pxS8jYKmpjcFt7vaCYcaKsnXEWgPMbNMG'),
+          amount: new BigNumber(1_000_000),
+          reference:reference,
+        },{ commitment: 'confirmed' })
 
         console.log(
           "Success! signature here: ",
           signatureInfo.signature.toString()
         );
 
-       // toast.success("NFT mint successfully!");
+       toast.success("NFT mint successfully!");
 
         router.push("/confirmed");
       } catch (e) {
@@ -93,7 +90,12 @@ export default function Minter() {
           // No transaction found yet, ignore this error
           return;
         }
-      //  toast.error("Minting failed!");
+        if (e instanceof ValidateTransferError) {
+          // Transaction is invalid
+          console.error('Transaction is invalid', e)
+          return;
+        }
+       toast.error("Minting failed!");
         console.error("Unknown error", e);
         clearInterval(interval);
       }
@@ -106,7 +108,7 @@ export default function Minter() {
   return (
     <>
       <Toaster />
-      <Button onClick={()=>router.push(solanaUr)} colorScheme="messenger" size="lg">Mint NFT</Button>
+      <Button onClick={()=>router.push(solanaUrl!)} colorScheme="messenger" size="lg">Pay Mony</Button>
       <div ref={qrRef} />
     </>
   );
