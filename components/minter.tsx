@@ -8,6 +8,7 @@ import {
   ValidateTransferError,
   Link,
 } from "@solana/pay";
+import axios from "axios";
 import BigNumber from "bignumber.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { useRouter } from "next/router";
@@ -18,7 +19,7 @@ import styles from '../styles/Home.module.css'
 
 export default function Minter() {
 
-  const [solanaUrl, setSolanaUrl] = useState<URL>();
+  const [signature, setSignature] = useState<string | null>(null);
   const router = useRouter();
   // ref to a div where we'll show the QR code
   const qrRef = useRef<HTMLDivElement>(null);
@@ -69,19 +70,11 @@ console.log(reference.toString())
         const signatureInfo = await findReference(connection, reference, {
           finality: "confirmed",
         });
-        // Validate that the transaction has the expected recipient, amount and SPL token
+        setSignature(signatureInfo.signature.toString())
+        clearInterval(interval);
 
-        console.log(
-          "Success! signature here: ",
-          signatureInfo.signature.toString()
-        );
-
-       toast.success("NFT mint successfully!");
-
-        router.push("/confirmed");
       } catch (e) {
         if (e instanceof FindReferenceError) {
-          // No transaction found yet, ignore this error
           return;
         }
        toast.error("Minting failed!");
@@ -94,10 +87,21 @@ console.log(reference.toString())
     };
   }, []);
 
+  useEffect(() => {
+    if (signature) {
+      toast.success("txn done")
+     console.log("Txn signature here:", signature)
+     const data = axios.get("https://jsonplaceholder.typicode.com/todos/1")
+     console.log(data)
+     toast.success("API req done")
+     router.push("/confirmed");
+    }
+  }, [signature]);
+
   return (
     <>
       <Toaster />
-      <Button onClick={()=>router.push(solanaUrl!)} colorScheme="messenger" size="lg">Pay Mony</Button>
+      <Button colorScheme="messenger" size="lg">Pay Mony</Button>
       <div ref={qrRef} />
     </>
   );
